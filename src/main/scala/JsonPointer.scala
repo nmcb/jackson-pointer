@@ -52,23 +52,21 @@ object PointerNode {
     }
 
     def toSortedMap(json: JsonNode): SortedMap[JsonPointer, JsonNode] = loop(json, root)
+
     private def loop(json: JsonNode, acc: JsonPointer): SortedMap[JsonPointer, JsonNode] = {
       import scala.collection.JavaConversions._
       if (json.isObject) {
-        println("adding: " + acc + " -> " + json)
         SortedMap(acc -> json) ++ json.fields.map { entry =>
           val (k, v) = (entry.getKey, entry.getValue)
           loop(v, acc :+ PointerNode.Node(k))
         }.reduce(_ ++ _)
       }
       else if (json.isArray) {
-        println("adding: " + acc + " -> " + json)
         SortedMap(acc -> json) ++ json.elements.zipWithIndex.map { case (v, i) =>
           loop(v, acc :+ PointerNode.Index(i))
         }.reduce(_ ++ _)
       }
       else {
-        println("adding: " + acc + " -> " + json)
         SortedMap(acc -> json)
       }
     }

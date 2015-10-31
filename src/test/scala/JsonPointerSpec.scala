@@ -1,6 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import naming.PointerNode.JsonPointer.JsonPointerOrdering
-import naming.PointerNode.{Node, Index, PointerNodeOrdering, JsonPointer}
+import naming.PointerNode.{Index, JsonPointer, Node, PointerNodeOrdering}
 import org.scalatest._
 
 class JsonPointerSpec extends FunSpec with MustMatchers {
@@ -21,7 +21,38 @@ class JsonPointerSpec extends FunSpec with MustMatchers {
       """.stripMargin)
 
     it("must map all pointers") {
-      JsonPointer.toSortedMap(root).map(println)
+      val root = new ObjectMapper().readTree(
+        """
+          | {
+          |   "object": {
+          |     "nested-array": [1],
+          |     "nested-object": {"a": 1}
+          |   },
+          |   "array": [{"a": 1}, ["a"]],
+          |   "bool": true,
+          |   "null": null,
+          |   "number": 123.456
+          | }
+        """.stripMargin)
+
+      JsonPointer.toSortedMap(root).mkString("\n") mustBe {
+        """
+          |/ -> {"object":{"nested-array":[1],"nested-object":{"a":1}},"array":[{"a":1},["a"]],"bool":true,"null":null,"number":123.456}
+          |/array -> [{"a":1},["a"]]
+          |/array/0 -> {"a":1}
+          |/array/0/a -> 1
+          |/array/1 -> ["a"]
+          |/array/1/0 -> "a"
+          |/bool -> true
+          |/null -> null
+          |/number -> 123.456
+          |/object -> {"nested-array":[1],"nested-object":{"a":1}}
+          |/object/nested-array -> [1]
+          |/object/nested-array/0 -> 1
+          |/object/nested-object -> {"a":1}
+          |/object/nested-object/a -> 1
+        """.stripMargin.trim
+      }
     }
 
     it("must correctly order pointer nodes") {
@@ -47,8 +78,8 @@ class JsonPointerSpec extends FunSpec with MustMatchers {
 
       val aaz = JsonPointer(List(Node("a"), Node("a"), Node("z")))
       val aza = JsonPointer(List(Node("a"), Node("z"), Node("a")))
-      JsonPointerOrdering.compare(aaz, aza ) must be < 0
-      JsonPointerOrdering.compare(aza, aaz ) must be > 0
+      JsonPointerOrdering.compare(aaz, aza) must be < 0
+      JsonPointerOrdering.compare(aza, aaz) must be > 0
 
       val aa0 = JsonPointer(List(Node("a"), Node("a"), Index(0)))
       val aa1 = JsonPointer(List(Node("a"), Node("a"), Index(1)))
